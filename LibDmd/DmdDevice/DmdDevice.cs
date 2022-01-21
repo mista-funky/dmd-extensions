@@ -207,10 +207,19 @@ namespace LibDmd.DmdDevice
 			var palPath = File.Exists(palPath1) ? palPath1 : palPath2;
 			var vniPath = File.Exists(vniPath1) ? vniPath1 : vniPath2;
 
+			var palXmlPath = Path.Combine(_altcolorPath, _gameName, "xml");
+			var palBinPath = Path.Combine(_altcolorPath, _gameName, "bin");
+
 			if (File.Exists(palPath)) {
 				try {
 					Logger.Info("Loading palette file at {0}...", palPath);
 					_coloring = new Coloring(palPath);
+
+					if (Directory.Exists(palBinPath))
+						_coloring.WriteColoring(palBinPath);
+					if (Directory.Exists(palXmlPath))
+						_coloring.DumpPalXml(palXmlPath);
+
 					VniAnimationSet vni = null;
 					if (File.Exists(vniPath)) {
 						Logger.Info("Loading virtual animation file at {0}...", vniPath);

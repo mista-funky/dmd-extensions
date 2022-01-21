@@ -2,6 +2,7 @@
 using System.Linq;
 using LibDmd.Common;
 using NLog;
+using System.Xml;
 
 namespace LibDmd.Converter.Colorize
 {
@@ -122,6 +123,119 @@ namespace LibDmd.Converter.Colorize
 		public override string ToString()
 		{
 			return $"{Path.GetFileName(Filename)}: v{Version}, {Palettes.Length} palette(s), {Mappings.Count} mapping(s), {Masks.Length} mask(s)";
+		}
+
+			writer.WriteUInt16BE((ushort)NumPalettes);
+
+			Logger.Trace("PAL[{1}] Wrote number of palettes as {0}", NumPalettes, writer.BaseStream.Position);
+			for (var i = 0; i < NumPalettes; i++)
+			{
+				writer.WriteUInt16BE((ushort)Palettes[i].Index);
+				writer.WriteUInt16BE((ushort)Palettes[i].Colors.Length);
+				writer.Write((byte)Palettes[i].Type);
+
+				for (var j = 0; j < Palettes[i].Colors.Length; j++)
+				{
+					writer.Write(Palettes[i].Colors[j].R);
+					writer.Write(Palettes[i].Colors[j].G);
+					writer.Write(Palettes[i].Colors[j].B);
+
+					//Logger.Trace("PAL Wrote color {0} - {1} {2} {3}", j, Palettes[i].Colors[j].R, Palettes[i].Colors[j].G, Palettes[i].Colors[j].B);
+				}
+			}
+
+			writer.WriteUInt16BE((ushort)Mappings.Keys.Count);
+			Logger.Trace("PAL[{1}] Wrote number of mappings as {0}", Mappings.Keys.Count, writer.BaseStream.Position);
+
+			foreach (var mapping in Mappings)
+			{
+				var checksum = mapping.Key;
+				var map = mapping.Value;
+
+				var Mode = (byte)map.Mode;
+				var PalI = map.PaletteIndex;
+				var Off = map.Mode == SwitchMode.Palette ? map.Duration : map.Offset;
+
+				writer.WriteUInt32BE(checksum);
+				writer.Write(Mode);
+				writer.WriteUInt16BE(PalI);
+				writer.WriteUInt32BE(Off);
+
+				//Logger.Trace("PAL Mapping[{4}] {0} - {1} {2} {3}", checksum, Mode, PalI, Off, writer.BaseStream.Position);
+			}
+
+			writer.Write((byte)Masks.Length);
+			Logger.Trace("PAL[{1}] Wrote number of masks as {0}", Masks.Length, writer.BaseStream.Position);
+
+			for (var i = 0; i < Masks.Length; i++)
+			{
+				writer.WriteBytesRequired(Masks[i]);
+				Logger.Trace("PAL Wrote number of {0} bytes of mask", Masks[i].Length);
+			}
+
+			writer.Close();
+			return false;
+		}
+
+		public void DumpPalXml(string filename)
+		{
+			var sts = new XmlWriterSettings()
+			{
+				Indent = true,
+			};
+
+			for (var i = 0; i < NumPalettes; i++)
+			{
+				string palfile = filename + "\\pal" + i + ".xml";
+				XmlWriter writer = XmlWriter.Create(palfile, sts);
+				writer.WriteStartDocument();
+				writer.WriteStartElement("palette");
+				var namestring = "pal" + i;
+
+				writer.WriteStartElement("name");
+				writer.WriteString(namestring);
+				writer.WriteEndElement();
+
+				writer.WriteStartElement("numberOfColors");
+				writer.WriteString(Palettes[i].Colors.Length.ToString());
+				writer.WriteEndElement();
+
+				writer.WriteStartElement("index");
+				writer.WriteString(Palettes[i].Index.ToString());
+				writer.WriteEndElement();
+
+				writer.WriteStartElement("colors");
+
+				for (var j = 0; j < Palettes[i].Colors.Length; j++)
+				{
+					writer.WriteStartElement("rgb");
+
+					writer.WriteStartElement("red");
+					writer.WriteString(Palettes[i].Colors[j].R.ToString());
+					writer.WriteEndElement();
+
+					writer.WriteStartElement("green");
+					writer.WriteString(Palettes[i].Colors[j].G.ToString());
+					writer.WriteEndElement();
+
+					writer.WriteStartElement("blue");
+					writer.WriteString(Palettes[i].Colors[j].B.ToString());
+					writer.WriteEndElement();
+
+					writer.WriteEndElement();
+				}
+				writer.WriteEndElement();
+
+				writer.WriteStartElement("type");
+				var paltype = Palettes[i].Type;
+				var paltypestring = Palettes[i].IsDefault ? "DEFAULT" : "NORMAL";
+				writer.WriteString(paltypestring);
+				writer.WriteEndElement();
+
+				writer.WriteEndElement();
+				writer.WriteEndDocument();
+				writer.Close();
+			}
 		}
 	}
 }

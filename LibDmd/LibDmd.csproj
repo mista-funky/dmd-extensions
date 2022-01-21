@@ -213,6 +213,7 @@
     </Compile>
     <Compile Include="AlphaNumericFrame.cs" />
     <Compile Include="ColoredFrame.cs" />
+    <Compile Include="Common\BinaryWriterExtensions.cs" />
     <Compile Include="Common\CultureUtil.cs" />
     <Compile Include="DmdDevice\IConfiguration.cs" />
     <Compile Include="Input\Frame.cs" />
