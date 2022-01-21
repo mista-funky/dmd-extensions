@@ -125,6 +125,15 @@ namespace LibDmd.Converter.Colorize
 			return $"{Path.GetFileName(Filename)}: v{Version}, {Palettes.Length} palette(s), {Mappings.Count} mapping(s), {Masks.Length} mask(s)";
 		}
 
+		public bool WriteColoring(string path)
+		{
+			string filename = path + "\\pin2dmd.pal";
+			var fs = new FileStream(filename, FileMode.Create);
+			var writer = new BinaryWriter(fs);
+
+			writer.Write((byte)Version);
+			Logger.Trace("PAL[{1}] Wrote version as {0}", Version, writer.BaseStream.Position);
+
 			writer.WriteUInt16BE((ushort)NumPalettes);
 
 			Logger.Trace("PAL[{1}] Wrote number of palettes as {0}", NumPalettes, writer.BaseStream.Position);
